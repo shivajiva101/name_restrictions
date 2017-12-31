@@ -6,6 +6,7 @@
 ----------------------------
 -- For legitimate player names that are caught by the filters.
 
+local cache = {}
 local exemptions = {}
 local temp = minetest.setting_get("name_restrictions.exemptions")
 temp = temp and temp:split() or {}
@@ -18,6 +19,18 @@ exemptions[minetest.setting_get("name")] = true
 exemptions["singleplayer"] = true
 
 
+local function cache_names()
+	local auth = minetest.get_auth_handler()
+	local t = auth.name_search("%")
+	for i,v in ipairs(t) do
+		if not t[row.name] then
+			t[row.name] = true
+		end
+	end
+	cache = t
+end
+cache_names()
+
 local function player_exempted(name)
 	-- Allow specifically exempted players
 	if exemptions[name] then
@@ -25,8 +38,7 @@ local function player_exempted(name)
 	end
 
 	-- Allow players that already exist
-	local auth = minetest.get_auth_handler()
-	if auth.get_auth(name) then
+	if cache[name] then
 		return true
 	end
 
@@ -72,7 +84,7 @@ minetest.register_on_prejoinplayer(function(name, ip)
 
 	-- Check for used names
 	local lname = name:lower()
-	for iname, data in pairs(minetest.auth_table) do
+	for iname, data in pairs(cache) do
 		if iname:lower() == lname and iname ~= name then
 			return "Sorry, someone else is already using this"
 				.." name.  Please pick another name."
@@ -82,24 +94,24 @@ minetest.register_on_prejoinplayer(function(name, ip)
 	end
 end)
 
--- Compatability, for old servers with conflicting players
-minetest.register_chatcommand("choosecase", {
-	description = "Choose the casing that a player name should have.",
-	params = "<name>",
-	privs = {server=true},
-	func = function(name, params)
-		local lname = params:lower()
-		local worldpath = minetest.get_worldpath()
-		for iname, data in pairs(minetest.auth_table) do
-			if iname:lower() == lname and iname ~= params then
-				minetest.auth_table[iname] = nil
-				assert(not iname:find("[/\\]"))
-				os.remove(worldpath.."/players/"..iname)
-			end
-		end
-		return true, "Done."
-	end,
-})
+-- -- Compatability, for old servers with conflicting players
+-- minetest.register_chatcommand("choosecase", {
+-- 	description = "Choose the casing that a player name should have.",
+-- 	params = "<name>",
+-- 	privs = {server=true},
+-- 	func = function(name, params)
+-- 		local lname = params:lower()
+-- 		local worldpath = minetest.get_worldpath()
+-- 		for iname, data in pairs(minetest.auth_table) do
+-- 			if iname:lower() == lname and iname ~= params then
+-- 				minetest.auth_table[iname] = nil
+-- 				assert(not iname:find("[/\\]"))
+-- 				os.remove(worldpath.."/players/"..iname)
+-- 			end
+-- 		end
+-- 		return true, "Done."
+-- 	end,
+-- })
 
 
 ------------------------
@@ -157,7 +169,7 @@ minetest.register_on_prejoinplayer(function(name, ip)
 	local re = stripped_name:gsub(all_chars, char_map)
 	re = "^[_-]*" .. re .. "[_-]*$"
 
-	for authName, _ in pairs(minetest.auth_table) do
+	for authName, _ in pairs(cache) do
 		if authName ~= name and authName:match(re) then
 			return "Your name is too similar to another player's name."
 		end
@@ -245,3 +257,9 @@ if pronounceability then
 	end)
 end
 
+minetest.register_on_joinplayer(function(player)
+		local name = player:get_player_name()
+		if not cache[name] then
+			cache[name] = true
+		end
+end)
