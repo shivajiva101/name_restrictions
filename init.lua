@@ -23,9 +23,7 @@ local function cache_names()
 	local auth = minetest.get_auth_handler()
 	local t = auth.name_search("%")
 	for i,v in ipairs(t) do
-		if not t[row.name] then
-			t[row.name] = true
-		end
+		if not t[v] then t[v] = true end
 	end
 	cache = t
 end
