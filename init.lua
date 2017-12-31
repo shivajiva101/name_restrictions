@@ -21,7 +21,7 @@ exemptions["singleplayer"] = true
 
 local function cache_names()
 	local auth = minetest.get_auth_handler()
-	local t,r = auth.name_search("%")
+	local t,r = auth.name_search("%"),{}
 	for i,v in ipairs(t) do
 		if not r[v] then r[v] = true end
 	end
