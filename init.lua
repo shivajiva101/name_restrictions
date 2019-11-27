@@ -118,7 +118,7 @@ minetest.register_on_prejoinplayer(function(name, ip)
 	re = "^[_-]*" .. re .. "[_-]*$"
 
 	local auth = minetest.get_auth_handler()
-	for authName, _ in pairs(auth.iterate) do
+	for authName in pairs(auth.iterate()) do
 		if authName ~= name and authName:match(re) then
 			return "Your name is too similar to another player's name."
 		end
